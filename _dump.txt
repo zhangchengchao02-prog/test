@@ -1,0 +1,576 @@
+
+Causal-guided regional deep learning for chlorophyll‑a dynamics prediction in heterogeneous marine systems
+
+Submitted by
+
+Xuan Wang*a, Huanyu Qi a, Wei Li a, Guijun Han a
+a Tianjin Key Laboratory for Marine Environmental Research and Service, School of Marine Science and Technology, Tianjin University, Tianjin 300072, China
+
+*Corresponding author: Xuan Wang
+mail address: xuanwang@tju.edu.cn
+
+Abstract
+Harmful algal blooms pose increasing threats to marine ecosystems and human health, underscoring the need for reliable predictions of chlorophyll-a (Chl-a), a key indicator of algal biomass. However, existing deep learning models are often criticized as "black boxes," which limits ecological interpretability and reduces robustness under environmental regime shifts. In this study, we develop a causal-guided deep learning framework that integrates Liang–Kleeman information flow theory with convolutional long short-term memory (ConvLSTM) networks to predict Chl-a dynamics across the heterogeneous coastal and shelf seas of China. A causal analysis of ten environmental factors (e.g., nutrients, temperature, salinity, solar radiation, precipitation, currents) reveals pronounced regional heterogeneity in the drivers of Chl-a. Based on these causal structures, we partition the study area into three ecologically distinct zones: a complex, multi-driver region influenced by river plumes and Kuroshio intrusion (Region 1); an open-ocean region dominated by seasonal forcing (Region 2); and a shallow shelf region where advective processes play a notable role (Region 3). Region‑specific ConvLSTM models, using only causally validated core predictors, achieve excellent 1-day forecast accuracy (R² > 0.90 across all regions), comparable with full‑factor models. At a 15-day lead time, both models capture the seasonal signal but smooth daily variability, which is ecologically consistent for physically pulsed systems. Generally, the core-factor model outperforms the full-factor model across all regions, indicating that non-causal predictors introduce noise that degrades longer-term forecasts. These findings demonstrate that causally guided predictor selection enhances model simplicity, portability, and long-lead reliability. The proposed causal-zonation–ConvLSTM framework provides a transferable approach for region-specific water quality forecasting, with direct implications for eutrophication management and early warning of harmful algal bloom.
+Keywords: information flow; causal analysis; Deep learning; chlorophyll-a ; Prediction;
+
+Introduction
+Harmful algal blooms (HABs), as a global marine ecological disaster, severely disrupt marine ecosystems structure and threaten fisheries production, seafood safety and human health
+
+(Wells et al., 2015). As a key indicator of algal biomass
+
+(Sun et al., 2019; Wang & Chen, 2024), the chlorophyll-a (Chl-a) reflects the risk of eutrophication
+
+(Chawla et al., 2020; Naderian et al., 2025; Saravani, 2025) and is closely associated with the occurrence and development of HABs
+
+dGU+
+
+dGU+
+(Song et al., 2011; Xu et al., 2024). Therefore, reasonable assessment of the factors influencing Chl-a variations and reliable predictions are crucial for algal blooms control, eutrophication management, and fishery resources conservation
+
+PjwvQ2l0ZT48L0VuZE5vdGU+AGAA
+
+PjwvQ2l0ZT48L0VuZE5vdGU+AGAA
+(Friedland et al., 2012; Hong et al., 2025; Jiang et al., 2019).
+It has been well recognized that algal growth is regulated by multiple environmental factors, including nutrients (e.g., nitrogen, phosphorus, and silicate)
+
+RW5kTm90ZT5AAA==
+
+RW5kTm90ZT5AAA==
+(Liu et al., 2016; L. Zhao et al., 2023), temperature and salinity structure
+
+(Nishino et al., 2008; Sun et al., 2019), solar radiation intensity (Li et al., 2026), precipitation (Hampton et al., 2022) and so on. Accordingly, numerous numerical models have been developed to simulate phytoplankton dynamics based on the principles of physical, chemical, and biological processes
+
+(Bai et al., 2022; Ismail & Al-Shehhi, 2023; Schuwirth et al., 2019). Their interpretability allows the elucidation of ecological mechanisms and extrapolation beyond historical conditions (Berthet et al., 2023). However, this capability relies on simplifying complex processes and representing them through intricate parameterizations. In highly dynamic environments, such predefined equations and parameters often fail to fully capture the system's complexity (Wool et al., 2020). This limitation has motivated the rise of data-driven approaches, especially deep learning, which extract complex patterns from observations without explicit physical priors. Early studies on Chl-a prediction employed artificial neural network (ANN) and random forest (RF)
+
+cmQ+PC9DaXRlPjwvRW5kTm90ZT5AAA==
+
+cmQ+PC9DaXRlPjwvRW5kTm90ZT5AAA==
+(Kyung-Min Kim, 2022; Yajima & Derot, 2018), which show nonlinear fitting capabilities but struggle with characterizing temporal features. Recurrent networks, including long short-term memory (LSTM) and gated recurrent unit (GRU), address this issue by capturing long-term temporal dependencies
+
+PgBAAA==
+
+PgBAAA==
+(Bagherian et al., 2024; Wu et al., 2023). To simultaneously account for spatial and temporal characteristics, hybrid convolutional neural network-long short-term memory (CNN-LSTM) models have been developed (Shahabi & Tahvildari, 2024). Nevertheless, they still suffer from insufficient extraction of spatial information and weak spatiotemporal coupling. In response, convolutional long short-term memory (ConvLSTM), with built-in convolution operations, achieves joint spatiotemporal modeling and performs excellently in Chl-a prediction
+
+dGU+AGAA
+
+dGU+AGAA
+(Rui et al., 2024; Yao et al., 2023). Despite these advances, data-driven models are often criticized as "black boxes" capturing statistical relationships rather than causal mechanisms, leading to limited ecological interpretability and reduced robustness under environmental regime shifts. A particular concern is the empirical selection of predictor variables. An excessive number of predictors may restrict model applicability due to data demands, whereas too few lead to the omission of critical information. Therefore, selecting a reasonable set of predictors that embed key influencing factors is essential. Moreover, deep learning models for Chl-a prediction are typically tailored to specific water bodies with distinct datasets, modeling approaches, and inputs. While most efforts focus on predictive accuracy, the reasons for model regional variability have received far less attention. Consequently, model applicability beyond original contexts and the specific conditions under which they remain reliable remain poorly understood.
+Causal analysis theory can distinguish causal relationships instead of mere statistical correlation among different variables. The Liang-Kleeman (LK) information flow theory, proposed by Liang and Kleeman
+
+(Liang & Kleeman, 2005; Liang & Kleeman, 2007), offers new opportunities to extract process-level insights from time series. This framework has shown potential in Earth system science, e.g., predicting El Niño Modoki events
+
+(Liang, 2021). Recently, ecological and environmental studies have applied LK information flow analysis to quantify directional causal impacts of sea surface temperature and climate change on global ocean color dynamics
+
+aXRlPjwvRW5kTm90ZT4A
+
+aXRlPjwvRW5kTm90ZT4A
+(Li et al., 2025). More researchers suggest that the LK analysis method is not only a tool for retrospective analysis, but also can serve as a prior constraint in predictive modelling, providing causally grounded guidance for drivers selection
+
+(Zheng et al., 2024).
+In this study, to move beyond statistical correlations, we adapt LK theory to analyze the true causal relationships between environmental factors and algae occurrence. Using Chl-a as an algal abundance indicator, we consider water quality variables (nitrate, phosphate, silicate, dissolved oxygen), oceanic conditions (currents, sea surface salinity, sea surface temperature), and atmospheric factors (solar radiation, total precipitation). Based on causal analysis results, we apply cluster analysis to identify regions with similar causal drivers. Finally, we develop region-specific ConvLSTM models to capture spatial heterogeneity of Chl-a dynamics and predict its variation for each homogeneous region, thereby providing technical support for aquatic environmental management.
+2. Study area and Datasets
+2.1. Study area
+The study area covers the coastal area of China and adjacent marginal seas (107.25°E-126.00°E, 16.00°N-41.00°N), a region characterized by intense interactions between marine ecological processes and human activities. Its hydrodynamic and ecological structures are highly complex, jointly influenced by the East Asian monsoon, tidal forcing, and ocean currents. Substantial land-derived inputs, including riverine runoff, nutrient discharges, and intensifying anthropogenic disturbances, contribute to pronounced spatial heterogeneity of the marine ecosystem (Wu & Wu, 2018). Additionally, atmospheric forcing, such as solar radiation and precipitation, modulates sea surface mixing and nutrient transport, amplifying the complexity of Chl-a variability in this region
+
+(Thompson et al., 2015; H. Zhao et al., 2023).
+Fig. 1 presents the bathymetric pattern of the study domain, which ranges from shallow coastal shelves to offshore areas with a maximum depth exceeding 5000 m. Coastal waters are shallow and heavily influenced by terrestrial inputs, whereas offshore areas are deeper and exhibit more stable oceanic conditions. This bathymetric contrast strongly affects water column structure, current dynamics, and nutrient retention, thereby shaping the spatial heterogeneity of phytoplankton biomass (Chl-a). Characterized by substantial water depth variations and long-term spatiotemporal heterogeneity of marine ecosystems, this region represents an ideal natural laboratory for exploring multi-source environmental drivers, modeling Chl-a dynamics, and establishing ecological zoning schemes.
+
+Fig. 1. The bathymetry of study area.
+2.2. Ocean biogeochemical and physical data
+The ocean biogeochemical and physical environmental data utilized in this study are sourced from the Copernicus Marine Environment Monitoring Service (CMEMS). Two primary datasets are employed: (1) the global ocean biogeochemistry hindcast dataset (Copernicus Marine Service, 2024a), which provides data on nitrate (NO₃), phosphate (PO₄), silicate (SiO₄), dissolved oxygen (DO), and Chl-a; and (2) the global ocean ensemble physics reanalysis dataset (Copernicus Marine Service, 2024b), which supplies information on eastward (U) and northward (V) currents, sea surface salinity (SSS), and sea surface temperature (SST). All CMEMS data undergo rigorous quality control and are extensively used in marine ecological studies. The datasets cover the period from January 1st, 2000 to December 31st, 2020. All variables are resampled to a spatial resolution of 0.25° × 0.25° and a daily temporal resolution to facilitate subsequent analyses.
+2.3. Meteorological data
+Meteorological forcing data are obtained from the fifth-generation global climate and weather reanalysis (ERA5) released by the European Centre for Medium-Range Weather Forecasts (ECMWF) via the Copernicus Climate Data Store (European Centre for Medium-Range Weather Forecasts, 2018). Two key variables are extracted: surface solar radiation (SSR), which directly affects phytoplankton photosynthesis, and total precipitation, which influences terrestrial discharge and sea surface salinity. These data are extracted over the same period from January 1st, 2000 to December 31st, 2020 with a spatial resolution of 0.25° × 0.25° and an hourly temporal resolution. To ensure consistency in temporal resolution with the oceanic dataset, SSR is aggregated to daily mean values, while total precipitation is summed to daily totals prior to subsequent analysis.
+Table 1 summarizes all environmental variables used in this study, along with their basic statistical characteristics.
+Table 1
+Summary of environmental variables used in this study.
+
+[TABLE]
+No.
+ | Full name
+ | Abbreviation
+ | Unit
+ | Min
+ | Mean
+ | Max
+ |
+1
+ | Chlorophyll-a
+ | Chl-a
+ | mg/m3
+ | 0.061289
+ | 0.400292
+ | 21.950974
+ |
+2
+ | Nitrate
+ | NO₃
+ | mmol/m3
+ | 0.000796
+ | 1.953254
+ | 108.958330
+ |
+3
+ | Phosphate
+ | PO₄
+ | mmol/m3
+ | 0.000016
+ | 0.018932
+ | 2.130919
+ |
+4
+ | Silicate
+ | SiO₄
+ | mmol/m3
+ | 1.052300
+ | 6.823990
+ | 245.678070
+ |
+5
+ | Dissolved Oxygen
+ | DO
+ | mmol/m3
+ | 176.243620
+ | 222.507637
+ | 433.626130
+ |
+6
+ | Zonal current velocity
+ | U
+ | m/s
+ | -1.931720
+ | 0.022372
+ | 2.711215
+ |
+7
+ | Meridional current velocity
+ | V
+ | m/s
+ | -2.031172
+ | 0.070067
+ | 2.365872
+ |
+8
+ | Sea Surface Salinity
+ | SSS
+ | PSU
+ | 0.632548
+ | 32.780348
+ | 35.476340
+ |
+9
+ | Sea Surface Temperature
+ | SST
+ | °C
+ | -1.780006
+ | 23.577240
+ | 32.477670
+ |
+10
+ | Surface Solar Radiation
+ | SSR
+ | J/m²
+ | 19410.666016
+ | 569191.812500
+ | 1185101.375000
+ |
+11
+ | Total Precipitation
+ | Precipitation
+ | m
+ | 0.000000
+ | 0.004285
+ | 0.392233
+ |
+
+3. Methodology
+3.1. Liang-Kleeman Information Flow
+To quantify the causal driving effects of multiple environmental variables on variations in Chl-a, the Liang-Kleeman (LK) information flow method is employed in this study. This method quantifies causal relationships between variables by calculating information flow values, which determine the strength of one variable’s causal influence on another. Unlike traditional correlation analysis, the information flow method reveals the direction of causality between variables and quantitatively describes the extent of that influence.
+Given time series of two variables X1 and X2, the maximum likelihood estimate of the information flow from X2 to X1 per unit time is given by
+T2→1=C11C12C2,d1−C122C1,d1C112C22−C11C122#1
+where Cij is the sample covariance between Xi and Xj, Ci,dj is the covariance between Xi and Xj, Xj is the difference approximation of dXj/dt using the Euler forward scheme Xj,n=(Xj,n+1−Xj,n)/∆t, ∆t is the time step. The opposite direction T1→2 is obtained by swapping indices.
+The non-zero value of T2→1 indicates a causal driving effect of X2 on the evolution of X1, whereas the zero value indicates no causal influence. Due to finite-sample estimation, hypothesis significant test is required. For a given significance level α and the corresponding test statistic zα, the standard deviation of T2→1 is zα(C12/C11)2σα122. Therefore, the confidence interval of the information flow from X2 to X1 is expressed as follows:
+T2→1−zα(C12C11)2σα122,T2→1+zα(C12C11)2σα122#2
+If the confidence interval excludes zero, then X2 is considered a causal driver of X1. Otherwise, their causal relationship is deemed statistically insignificant.
+In this study, the Chl-a concentration is defined as the target variable X1, while the environmental factors, including NO₃, PO₄, SiO₄, DO, currents, SSS, SST, SSR, and precipitation, are designated as the explanatory variables X2. The unidirectional information flow from each individual environmental factor to Chl-a is quantified using Eq. 1. To verify the reliability of the calculated information flow values, statistical significance testing is performed at the 99% confidence level. Only the statistically significant information flow results are retained, which are used to characterize the intensity of the causal driving effect of each environmental factor on Chl-a variation.
+3.2. Causality-driven ecological zoning via K-Means clustering
+K‑Means clustering is a distance‑based unsupervised method that partitions samples into k clusters by iteratively minimizing within‑cluster variance and maximizing between‑cluster variance, thereby ensuring high intra‑cluster similarity and inter‑cluster dissimilarity. The Euclidean distance quantifies the similarity between two samples:
+dx,y=i=1mxi−yi2#3
+where dx,y is the Euclidean distance between sample x and y, m is the feature dimension, and xi, yi are their values on the i-th feature.
+The objective function, within-cluster sum of squares (WCSS), is minimized iteratively:
+WCSS=k=1Kx∈Ckd(x,ck)2#4
+where K is the number of clusters, Ck is the set of all samples in the k-th cluster, ck is its centroid.
+In this study, the LK information flow results are used as feature vectors for ecological zoning to identify regions with similar ecological characteristics in terms of primary productivity. Each grid cell constitutes an independent clustering sample, with its vector data composed of the information flow values from all environmental factors to Chl‑a. It should be noted that each causal analysis between a factor and Chl‑a represents an independent system. According to LK information flow theory, the magnitudes of information flow from different systems are not directly comparable; rather, only the existence or absence of a causal relationship can be interpreted. To eliminate the relative differences in magnitude among factors and to concentrate on the binary indication of causality, all information flow values of all factors are standardized prior to clustering based on Eq. 5.
+Xiscaled=Xi−Xσ#5
+where Xi represents the raw information flow value at each grid cell, X is the regional mean value of the corresponding individual information flow feature, and σ denotes its standard deviation.
+3.3. Convolutional Long Short-Term Memory for spatiotemporal Chl-a prediction
+Convolutional Long Short-Term Memory (ConvLSTM) extends the standard LSTM by replacing fully connected operations with convolutional structures within the recurrent gates (Shi et al., 2015). This design allows the model to simultaneously capture temporal dependencies and spatial features, making it particularly suitable for spatiotemporal prediction tasks such as Chl-a dynamics driven by multi-source environmental fields.
+A ConvLSTM cell contains three gates—forget, input, and output—each implemented via convolutional layers. At each time step t, the cell takes the current input Xt and the previous hidden state Ht−1, as inputs (a tensor of spatial dimensions H×W with C channels), producing the updated hidden state Ht and cell state Ct. The convolutional operations preserve spatial locality and reduce parameter redundancy compared to fully connected LSTM, enabling the network to learn translation-invariant spatiotemporal patterns.
+
+Fig. 2. ConvLSTM Deep Learning Framework for Chl-a Concentration Prediction.
+In this study, we developed a ConvLSTM-based framework for Chl-a prediction (Fig. 2). The input data is organized as tensors of dimension (Batch, Tw, C, H, W), where Tw is the length of the input time window, C is the number of environmental variables (e.g., SST, SSS, nutrients, solar radiation), and H×W is the spatial grid size over the study domain. The network consists of two stacked ConvLSTM layers, each with 64 hidden channels and a 3×3 convolutional kernel with padding = 1 to preserve spatial resolution. Through the gated mechanisms, the stacked cells jointly encode spatiotemporal features from the input sequence. Finally, convolutional output layer maps the hidden states to the predicted Chl-a value at the next time step. The model is trained by minimizing the mean squared error between predictions and original data, with hyperparameters optimized via validation.
+3.4. Experiment setup
+
+Fig. 3. Flowchart of the proposed methodology
+The experimental workflow is summarized in Fig. 3. First, the Liang–Kleeman information flow method is employed to quantify the directional causal influence of each environmental factor on Chl‑a. Only the information flow values that passed a significance test at the 99% confidence level are retained to represent effective causal driving strength.
+For each grid cell, K‑Means clustering is subsequently performed based on the vector constructed from the significant information flow values of all environmental factors, grouping cells with similar causal structures into the same ecological sub region. Within each sub region, the dominant drivers of Chl‑a are identified to ensure mechanistic homogeneity.
+Finally, the ConvLSTM models are developed for each sub region for lead times of 1 day, 7days, 15 days and 30 days, respectively. The reduced factor model includes only the variables identified through LK analysis as having the strongest causal influence on Chl‑a. For comparison, the full factor models which incorporate all available environmental variables (NO₃, PO₄, SiO₄, DO, U, V, SSS, SST, SSR, Precipitation) are also tested to evaluate the effectiveness of information flow based predictor selection.
+The data from January 1, 2000, to December 31, 2015, is used as the training dataset, while the data from January 1, 2016, to December 31, 2018, serves as the validation dataset. The period from January 1, 2019, to December 31, 2020, is designated as the independent test dataset. All experiments utilize the same baseline ConvLSTM architecture (input sequence length = 60 days, two stacked layers with 64 hidden channels, 3×3 kernel). The hyperparameters are set as follows: learning rate = 0.001, batch size = 16, epochs = 30. The model is trained using mean squared error (MSE) as the loss function (Eq. 6) and optimized with the Adam optimizer.
+Prediction accuracy is statistically calculated using the root mean square error (RMSE, Eq. 7) and the coefficient of determination (R², Eq. 8). These metrics provide a comprehensive evaluation of Chl‑a prediction error and explained variance.
+Loss=MSE=1Ni=1N(yi−yi)2#6
+RMSE=1Ni=1N(yi−yi)2#7
+R2=1−i=1N(yi−yi)2i=1N(yi−y)2#8
+4. Results and Discussion
+4.1. LK Information Flow results
+Fig. 4 presents the information flow results from ten environmental factors to Chl‑a. A value of zero indicates no significant causality, while positive values denote a causal driving effect, and negative values suggest that the factor stabilizes Chl‑a variability.
+
+Fig. 4. Spatial distribution of significant information flow intensity from environmental factors to Chl-a.
+As illustrated in Fig. 4b, PO4 generally exerts a positive causal relationship on Chl-a across most regions. In the Bohai and Yellow Seas, extending to the northern South China Sea (NSCS), riverine inputs maintain nitrogen to phosphorus (N/P) ratios exceeding 16, rendering PO₄ the limiting nutrient. Consequently, fluctuations in PO₄ directly impact phytoplankton growth. In contrast, farther offshore, where the N/P ratio decreases to approximately 10, PO₄ dynamics are predominantly influenced by water movement rather than river discharge. The shelf circulation and water movement in these areas exhibit complex dynamics driven by wind, tides, the Kuroshio intrusion, freshwater discharge from the estuary, and varied local topography
+
+ZE5vdGU+AGAA
+
+ZE5vdGU+AGAA
+(Gan et al., 2009; Shu et al., 2018). There are pronounced causal signals from PO₄ in the northeast of Taiwan, attributed to the Kuroshio Current, which carries warm, high-salinity tropical seawater northwards. As it travels from depths of thousands of meters to the northeast of Taiwan, the Kuroshio intrusion through the Luzon Strait fosters a cyclonic slope current that serves as the dynamic boundary delineating the shelf circulation. This topography forces the main branch of the Kuroshio Current to make a sharp turn towards the north-east of Taiwan, while bringing nutrient-rich deep water to the surface layer, leading to nutrient accumulation in this area. Similar signals can also be noted from NO₃ and SiO₄ to Chl-a (shown in Fig. 4a, Fig. 4c) respectively), further confirming that the physical transport of nutrients drives phytoplankton variability in that region.
+NO₃ and SiO₄ exhibit negligible causal effects on Chl‑a outside the Kuroshio‑influenced NSCS (Fig. 4a, Fig. 4c). They suggest that variations in NO3 and SiO4 concentrations do not cause significant phytoplankton dynamics in this region. An exception occurs in the Pearl River Estuary (PRE), where NO₃ demonstrates a positive causal influence due to nutrient loading from freshwater. This influx alleviates coastal phosphorus limitations, allowing inorganic nitrogen and phosphorus to collaboratively promote phytoplankton growth. At the estuary’s outlet, where freshwater interacts with coastal shelf water, increased turbidity and reduced residence time lead to a negative causal relationship; specifically, either dilution or stabilization of Chl‑a levels can be observed with the fluctuations in NO₃.
+SSS (Fig. 4e) exhibits a spatial pattern that closely mirrors that of NO₃. This indicates that the distribution of NO₃ in these regions is primarily governed by physical processes such as dilution and mixing, rather than by biological assimilation. Therefore, both NO₃ and SSS serve as tracers of water movement. That means, in these regions with positive information flow values, it is primarily the movement of water that influences the distribution of phytoplankton.
+As shown in Fig. 4d and Fig. 4f, DO exhibits clear influence on Chl-a in the NSCS. SST shows similar causal patterns, implying that changes in surface DO are primarily driven by physical processes, such as vertical mixing driven by the winter northeast monsoon and seasonal variation. In this context, SST and DO serve as tracers of these processes, forming a stable causal chain with Chl-a. Conversely, in the Bohai Sea, Yellow Sea, and the majority of the East China Sea, DO does not demonstrate a significant causal relationship with Chl‑a. This lack of relationship may be attributed to the relatively stable water movement in these areas compared to the South China Sea, which facilitates the maintenance of a stable ecological balance concerning DO and Chl‑a.
+As a crucial meteorological variable, SSR shows a consistently positive information flow across most of the study area as illustrated in Fig. 4g, underscoring the fundamental role of light in facilitating photosynthesis. However, it is important to note that at the PRE estuary, solar radiation has no significant impact on Chl-a. This finding further demonstrates that in this region, the mixing of freshwater with the shelf current not only alters salinity but also increases turbidity. In contrast, precipitation (Fig. 4h) has multifaceted effects. Near the estuary, a clear positive causal relationship between precipitation and Chl-a aligns with previous findings, indicating that increased precipitation leads to nutrient-rich runoff that enhances algal biomass in the vicinity
+
+PC9FbmROb3RlPgBAAA==
+
+PC9FbmROb3RlPgBAAA==
+(Thompson et al., 2015). However, this effect is limited to coastal estuaries. In most offshore areas, the causal relationship is negative, indicating that precipitation dilutes or stabilizes surface Chl‑a.
+Surface currents significantly affect Chl‑a only along coastal shelves, as shown in Figs. 4i-j, where coastal shelf currents play a crucial role in influencing phytoplankton distribution. In other regions such as northeastern Taiwan, as previously mentioned, the impact of slope currents on Chl-a is primarily reflected through vertical mixing of seawater, which is not adequately represented in surface current analyses.
+4.2. Information Flow-Based K-Means Ecological Zoning
+4.2.1. Determination of clustering parameters
+Taking the information flow results as input vectors, the K-Means clustering algorithm is adopted to classify grid cells with similar causal structures. Hierarchical clustering is utilized to determine the optimal cluster number, which is found to be k. The corresponding dendrogram illustrated in Fig. 5 demonstrates the aggregation of hierarchical samples and the separation of clusters. At the threshold of k=3, the mean inter-cluster distance (6.89) significantly exceeds the mean intra-cluster distance (1.73), resulting in a ratio of 3.98, which indicates clear separation between clusters.
+
+Fig. 5. Determination of k using hierarchical clustering based on LK information flow features. (The horizontal axis indicates each cluster branch and the number of grid points it contains, while the vertical axis represents the clustering merging distance. The red dashed line marks the selected threshold, corresponding to k=3.)
+4.2.2. Spatial pattern characteristics of physical zoning
+Based on the cluster results, the study area is divided into three subregions as shown in Fig. 6. Region 1 (197 cells) encompasses the Yangtze River Estuary, the Pearl River Estuary, and the Kuroshio region northeast of Taiwan. Although geographically distant, these areas are significantly influenced by external water masses, with nutrient supply dominated by physical transport mechanisms such as river plumes or upwelling, leading to ‘pulsing’ ecological responses. Region 2 (2384 cells) consists of deeper waters (>50 m) characterized by weak terrestrial influence, prolonged stratification, low nutrient levels, and high transparency, which are indicative of primarily open ocean processes. Region 3 (835 cells) includes shallow continental shelves (<50 m) that experience weak yet continuous river influence. This region, influenced by coastal shelf current systems and tidal mixing, demonstrates a lower intensity of terrestrial nutrient input compared to estuarine areas. Nutrients regeneration is predominantly governed by physical mixing.
+
+Fig. 6. Spatial distribution of physical zoning derived from K-Means clustering based on LK information flow.
+4.2.3. Identification of core driving factors for Chlorophyll-a
+Table 2 presents the proportion of grid cells where each environmental factor exhibits significant causal influence on Chl-a. In Region 1, eight significant factors exceed 80%, including SST, DO, SSR, PO₄, NO₃, precipitation, SiO₄, and SSS. This finding indicates that the dynamics and ecological characteristics of this region are relatively complex, influenced by multiple environmental factors affecting Chl-a variation. In Region 2, only three factors surpass 80%, indicating that the water characteristics in this open area are relatively stable, with solar radiation, SST, and PO4 being the most influential. In Region 3, four factors exceed 80%, with surface currents playing a notable role, which aligns with our previous analytical results. These core factors provide interpretable inputs for subsequent deep learning models.
+Based on this analysis, areas with common characteristics are grouped into the same category, within which the primary factors influencing Chl‑a levels remain consistent. The variations in core driving factors across the three categories highlight the distinct heterogeneity of the mechanisms driving Chl‑a. The clustering‑derived core factors provide a set of inputs—interpretable at both physical and ecological levels—for subsequent deep learning models.
+For Regions 2 and 3, environmental factors with over 80% cell occupancy are selected as predictors for deep learning modeling: Region 2 (SSR, PO₄, SST) and Region 3 (SSR, PO₄, U, V). Region 1 have eight factors meeting this criterion; to maintain a comparable number of predictors with the other two regions and consider data availability, we chose the top four. However, given that DO and SST exhibit similar causal patterns and that SST data are more widely available, we finally adopt only SST, SSR, and PO₄ for Region 1. The rationality of core factor reduction in Region 1 is justified and discussed in Supplementary material.
+Table 2
+The quantity and proportion of grid cells that pass the significance test in each subregion.
+
+[TABLE]
+Region 1
+ | Region 2
+ | Region 3
+ |
+Factor
+ | Pass
+(n)
+ | Total (n)
+ | Proportion (%)
+ | Factor
+ | Pass
+(n)
+ | Total (n)
+ | Proportion (%)
+ | Factor
+ | Pass
+(n)
+ | Total (n)
+ | Proportion (%)
+ |
+SST
+ | 197
+ | 197
+ | 100.00
+ | SSR
+ | 2313
+ | 2384
+ | 97.02
+ | SSR
+ | 827
+ | 835
+ | 99.04
+ |
+DO
+ | 196
+ | 197
+ | 99.49
+ | PO4
+ | 2141
+ | 2384
+ | 89.81
+ | PO4
+ | 817
+ | 835
+ | 97.84
+ |
+SSR
+ | 191
+ | 197
+ | 96.95
+ | SST
+ | 2014
+ | 2384
+ | 84.47
+ | U
+ | 733
+ | 835
+ | 87.78
+ |
+PO4
+ | 189
+ | 197
+ | 95.94
+ | Precipitation
+ | 1740
+ | 2384
+ | 72.99
+ | V
+ | 716
+ | 835
+ | 85.75
+ |
+NO₃
+ | 188
+ | 197
+ | 95.43
+ | DO
+ | 1674
+ | 2384
+ | 70.22
+ | Precipitation
+ | 661
+ | 835
+ | 79.16
+ |
+Precipitation
+ | 186
+ | 197
+ | 94.42
+ | NO₃
+ | 1424
+ | 2384
+ | 59.73
+ | NO₃
+ | 542
+ | 835
+ | 64.91
+ |
+SiO4
+ | 185
+ | 197
+ | 93.91
+ | U
+ | 1359
+ | 2384
+ | 52.81
+ | SiO4
+ | 508
+ | 835
+ | 60.83
+ |
+SSS
+ | 180
+ | 197
+ | 91.37
+ | SSS
+ | 1240
+ | 2384
+ | 52.01
+ | SSS
+ | 484
+ | 835
+ | 57.96
+ |
+U
+ | 107
+ | 197
+ | 54.31
+ | SiO4
+ | 962
+ | 2384
+ | 40.35
+ | DO
+ | 483
+ | 835
+ | 57.84
+ |
+V
+ | 101
+ | 197
+ | 51.27
+ | V
+ | 952
+ | 2384
+ | 39.93
+ | SST
+ | 450
+ | 835
+ | 53.89
+ |
+
+4.3. Prediction performance of regional ConvLSTM models for the spatiotemporal distribution of Chl-a
+The results of reduced‑factor model and full-factor model are compared in each subregion at lead times from 1 day to 30 days, with prediction accuracy assessed via RMSE and R² as shown in Table 3.
+As can be seen, both models demonstrate excellent performance, with R2 exceeding 0.90 across all three regions at 1 day lead time. The advantage of core-factor modeling increases as the lead time increase. While the differences are minimal at day 1 forecasting, they progressively amplify for longer forecasting horizon from 7-30 days. At day 30, the core-factor model reduces RMSE by 0.05–0.07 in Regions 1 and 2, with R² improvements of 0.02–0.04. It may be due to the fact that, at very short leads, the model relies heavily on the strong temporal autocorrelation of Chl‑a itself (memory effect). Additional non-causal variables do not introduce substantial bias within one step, but they carry independent prediction errors that are nonlinearly amplified through the recurrent architecture over multiple time steps. As forecasting horizon increase, these accumulated errors exceed the initial advantage, making the parsimonious core-factor model both more stable and more accurate.
+In order to further illustrate the contribution of the zoning approach, a baseline model without zoning was also constructed comparing with the proposed region-specific prediction models to verify if the causal-guided zoning strategy can improve prediction performance. The details are discussed in the Supplementary Material.
+Table 3
+Evaluation metrics of Chl-a concentration prediction for each experimental group.
+
+[TABLE]
+
+ |
+ | Region 1
+ | Region 2
+ | Region 3
+ |
+
+ |
+ | RMSE
+ | R2
+ | RMSE
+ | R2
+ | RMSE
+ | R2
+ |
+1d
+ | Full-Factor
+ | 0.3804
+ | 0.9725
+ | 0.1633
+ | 0.9182
+ | 0.1839
+ | 0.9171
+ |
+
+ | Core‑Factor
+ | 0.4194
+ | 0.9666
+ | 0.1730
+ | 0.9081
+ | 0.1980
+ | 0.9002
+ |
+7d
+ | Full-Factor
+ | 0.5722
+ | 0.9386
+ | 0.1968
+ | 0.8810
+ | 0.2719
+ | 0.8182
+ |
+
+ | Core‑Factor
+ | 0.5304
+ | 0.9469
+ | 0.2007
+ | 0.8762
+ | 0.2750
+ | 0.8139
+ |
+15d
+ | Full-Factor
+ | 0.6552
+ | 0.9186
+ | 0.2604
+ | 0.7918
+ | 0.3051
+ | 0.7718
+ |
+
+ | Core‑Factor
+ | 0.6044
+ | 0.9307
+ | 0.2291
+ | 0.8389
+ | 0.2960
+ | 0.7852
+ |
+30d
+ | Full-Factor
+ | 0.7779
+ | 0.8878
+ | 0.3049
+ | 0.7121
+ | 0.3040
+ | 0.7699
+ |
+
+ | Core‑Factor
+ | 0.7262
+ | 0.9073
+ | 0.2835
+ | 0.7511
+ | 0.3000
+ | 0.7759
+ |
+
+To further investigate the forecast performance across different lead times, the 1‑day (short‑range) and 15‑day (medium‑range) forecast results are selected as illustrative examples for a detailed examination.
+At the 1‑day lead time, in Region 1, the full-factor model performs slightly better (RMSE = 0.38) compared to the reduced-factor model (RMSE = 0.42). Although eight factors influence over 90% of the area, we selected only three, which may partly account for the observed accuracy difference. In Regions 2 and 3, the performance gaps are minimal (RMSE: 0.16 vs. 0.17 in Region 2; 0.18 vs. 0.20 in Region 3). The reduced-factor model still achieves comparably high skill, indicating that the selected variables electively capture most of the daily Chl-a variability.
+Figs. 7a–c compare the spatial averages of 1 day forecast results with original reanalysis data. The Chl‑a levels in Region 1 exhibit summer peak and winter low, driven by river discharge from Pearl River and Yangtze River estuaries, as well as summer rainfall. In contrast, Regions 2 and 3 display a winter peak and summer low. This phenomenon may be attributed to the presence of a thermocline occurring in summer, which suppresses nutrient supply, while the northeast monsoon in winter induces wind driven mixing, enriching surface nutrients and boosting phytoplankton biomass. In Region 1, both models accurately capture day to day variations; the reduced model (using only SST, SSR and PO₄) performs comparably to the full model. Similar results are observed for Regions 2 and 3 (Figs.7b-c), demonstrating that at short horizons, these physically relevant predictors are sufficient for the model’s strong short-term memory to account for Chl‑a, with additional predictors providing minimal extra benefit.
+The time averaged RMSE for 1-day forecasts is shown in Figs.7d-f (full factors) and Figs.7g-i (core factors). The predictability of Region 1 is indicative of its externally forced nature, characterized by river plumes and Kuroshio intrusion. The larger errors observed in the reduced-factor model near the Yangtze River plume can be attributed to the complexity of multi-driver environments, which necessitate the inclusion of additional factors such as NO₃, precipitation, and SSS to accurately capture frontal dynamics and the influence of freshwater. Our causal analysis does show that these factors each impact over 90% of the area. Nevertheless, the model based on top three core factors still achieves an R² of 0.97, confirming that SST, SSR, and PO₄ effectively capture the dominant causal pathways. Given the constraints of data availability and the need for model portability, the three-factor model offers enhanced applicability while preserving accuracy. For Regions 2 and 3, both models exhibit strong performance. In open waters (Region 2), solar radiation, SST, and PO₄, identified as the most significant factors, indicate that phytoplankton dynamics are primarily driven by seasonal variations and biochemical processes. These factors covary with physical processes, providing predictive information comparable to the full set at short lead times. Including U and V instead of SST in the reduced set for Region 3 highlights the importance of advective processes and shelf currents.
+[IMG:media/image7.png]
+Fig. 7. 1-day Chl-a forecast results and spatial distribution of RMSE in three subregions.
+For the forecasting horizon of 15 days, the core-factor model consistently outperforms the full-factor model across all three regions, yielding lower RMSE and higher R2 as shown in Table 3. This superiority is likely due to the full-factor models’ inclusion of all variables, such as SSS, NO₃, and DO, which may introduce redundant, noisy, or indirect signals. Over longer prediction horizons, these extraneous inputs accumulate compounding errors, thereby reducing predictive stability.
+Figs.8a-c shows the spatial average of the 15-day forecasts. In Region 1, the core‑factor model (including SST, SSR, PO₄) successfully reproduces the overall temporal evolution of Chl‑a, capturing both short period fluctuations and seasonal trends. However, a systematic damping of amplitude is evident. The predicted peaks and troughs are consistently smaller than those in the reanalysis data, while the timing and frequency are well represented. This region is characterized by strong, coherent external forcing, such as Kuroshio intrusions and river plumes. The model successfully identifies the dominant physical drivers (SST cooling, SSR pulses, nutrient injections) but underestimates the biological gain, namely the efficiency of converting physical forcing into biomass. This underestimation may arise from the weakened ability to assess the influence of environmental factors from 15 days prior on current phytoplankton dynamics during longer forecast intervals.
+In Regions 2 and 3, the 15-day forecasts from both models exhibit substantial smoothing relative to the original data. While the seasonal trend is accurately reproduced, daily variability is largely suppressed, indicating that low-frequency signals are preserved but high-frequency fluctuations are dampened. In Region 2, the core-factor model slightly overestimates Chla compared to the full-factor model during the high productivity period in February. However, it demonstrates superior performance during other periods. Characterized as a physically pulsed system, the seasonal Chla signal in Region 2 is reproduced, likely because the core factors are able to capture the driving forces of episodic winter monsoon activity operating on weekly to monthly timescales.
+Similar smoothing is also observed in Region 3. Although both models slightly underestimate the secondary Chla peak in July, the core-factor model shows a clear advantage during the main bloom in January, with predictions significantly closer to original data than those from the full-factor model. This advantage likely arises because the predictors in the core-factor model represent the direct causal drivers of the mixing–nutrient–light coupling, thereby enabling a more efficient capture of the main bloom. In contrast, the additional predictors in the full-factor model may introduce conflicting signals or noise, which degrades its forecast performance for the main bloom. The secondary peak in July, often associated with stratified conditions, regenerative production, or riverine influence, is underestimated by both models, suggesting that neither adequately represents the mechanisms driving this summer Chla maximum. A possible explanation is that the 15-day lead time may be too long to resolve the transient nature of summer blooms, which are typically triggered by brief river discharge or short-duration wind events.
+The temporal averaged RMSE for 15-day forecasts (Figs.8d–i) indicates that the core-factor model exhibits lower predictive error compared to full-factor model, particularly in the NSCS. In the waters off eastern Taiwan (Regions 1 and 2), Kuroshio upwelling brings nutrient-rich PO₄ to the surface, directly stimulating phytoplankton growth. SST and SSR are significant covariates emphasized by the core-factor model leading to robust predictions. The additional variables in the full model show minimal variation and lack a direct causal relationship with Chl-a. Consequently, the model attempts to learn spurious statistical associations, introducing systematic biases at the 15-day lead time. In Region 3, the coastal area surrounding Taiwan is influenced by multiple processes, including tidal mixing, coastal currents, and freshwater runoff. The core factors SSR, PO₄, and currents maintain the influence of key drivers while eliminating variables that lack causal relationships, thereby preventing the accumulation of long-term forecast errors.
+In summary, only variables with significant causal relationships with Chl-a provide stable long-term forecasting information. Non-causal variables introduce spurious prediction information. At the 1-day lead, this noise do not accumulate significantly, allowing the model to rely on short-term autocorrelation. However, at the 15-day scale, each non-causal variable contributes independent prediction errors that are amplified through the model’s internal nonlinear coupling, ultimately diminishing overall accuracy.
+[IMG:media/image8.png]
+Fig. 8. 15-day Chl-a forecast results and spatial distribution of NRMSE in three subregions.
+5. Discussion
+This study developed a comprehensive causal-guided regional deep learning framework to forecast the Chl-a based on LK information flow analysis. It is need to noted that the LK information flow theory is formally derived under a linear assumption. However, subsequent studies have demonstrated its remarkable performance in benchmark nonlinear systems and real-world applications (Liang, 2014; Liang, 2021), suggesting that the formula may be more broadly applicable. In this study, we applied LKIF independently to each grid cell. This is designed to establish a parsimonious and portable framework. In real-world forecasting contexts, particularly in data-sparse regions, acquiring concurrent environmental data from surrounding grid cells for every target location is rarely feasible. Incorporating such spatially explicit dependencies would introduce substantial complexity and undermine model transferability.
+From a causal inference perspective, our framework thus focuses on identifying the minimal yet robust set of local causal drivers required for reliable prediction. By reducing the input dimension from ten to just three or four causally validated variables, our core-factor model dramatically enhances applicability in real-time early-warning contexts, where full-factor data are rarely available. While the full-factor model may show a slight advantage at short lead times, it becomes fragile when any non-causal predictor is missing or contaminated, whereas the core-factor model remains inherently robust to such incomplete inputs.
+6. Conclusion
+To objectively quantify the spatial variation characteristics of the primary factors influencing Chl-a for the establishment of a deep learning prediction model that aligns with physical driving changes, this study integrates causal inference (Liang–Kleeman information flow theory) with a deep learning technique (ConvLSTM) to predict Chl-a dynamics across heterogeneous marine regions. The practical value of our approach lies in its operational feasibility and ecological interpretability. Unlike conventional statistical or purely data-driven approaches, our framework explicitly distinguishes causal drivers from spurious correlations, thereby enhancing both predictive reliability and ecological interpretability.
+The causal analysis revealed pronounced regional heterogeneity in the environmental controls on Chla. In estuarine and Kuroshioinfluenced areas (Region 1), multiple factors—including nutrients, physical variables, and meteorological forcing—exert significant causal influences, reflecting complex, pulsedriven dynamics. In contrast, openocean waters (Region 2) are primarily regulated by seasonal forcing (SSR, SST, PO₄), whereas shallow shelf regions (Region 3) are additionally shaped by advective processes (surface currents U, V). These causally defined zones facilitate region-specific predictor selection, thereby reducing model complexity without sacrificing interpretability.
+At the 1-day lead time, both the core-factor (core causal drivers) and full-factor models effectively reproduce the daily variability of Chl-a. The core-factor model performs comparably to the full model, indicating that a small set of causally validated variables captures most of the predictable variance in Chla at short horizon.
+At the 15day lead time, the core-factor model outperformed the full-factor model across all regions. Both models exhibited substantial smoothing, effectively preserving the seasonal signal while dampening daily variability. This attenuation is ecologically consistent for physically pulsed systems (Region 2), where Chla variability is predominantly influenced by weekly-to-monthly monsoon forcing. In Region 3, both models underestimate the secondary summer bloom, likely due to the 15-day lead time exceeding the duration of transient drivers, such as short-lived wind events or river discharge. Notably, the core-factor model demonstrated superior performance during the main winter bloom in Region 3, suggesting that the inclusion of non-causal predictors in the full model introduced noise that degraded long-lead forecasts.
+Overall, our findings demonstrate that causally guided predictor selection not only improves model parsimony and portability but also reduces error accumulation at longer lead times. The proposed causalzonation–ConvLSTM framework provides a transferable approach for region-specific water quality forecasting, with direct implications for eutrophication management, early warning of harmful algal bloom, and marine ecosystem conservation. Future work should extend this framework to incorporate time-varying causal structures and assess its applicability in other biogeochemical and ecological forecasting contexts.
+CRediT authorship contribution statement
+Huanyu Qi: Writing – original draft, Investigation, Methodology, Formal analysis, Validation, Conceptualization. Xuan Wang: Writing – Review & editing, Supervision, Methodology, Conceptualization, Funding acquisition. Wei Li: Supervision, Conceptualization. Guijun Han: Supervision, Conceptualization.
+Acknowledgements
+This research was funded by the National Natural Science Foundation of China, grant number 42576199.
+References
+Bagherian, K., Fernández-Figueroa, E. G., Rogers, S. R., Wilson, A. E., Bao, Y., 2024. Predicting Chlorophyll-a Concentration and Harmful Algal Blooms in Lake Okeechobee Using Time-Series MODIS Satellite Imagery and Long Short-Term Memory. Journal of the ASABE Vol.67(No.5), 1191-1202. https://doi.org/10.13031/ja.15995
+Bai, J., Zhao, J., Zhang, Z., Tian, Z., 2022. Assessment and a review of research on surface water quality modeling. Ecological Modelling Vol.466(Suppl C), 109888. https://doi.org/10.1016/j.ecolmodel.2022.109888
+Berthet, S., Jouanno, J., Séférian, R., Gehlen, M., Llovel, W., 2023. How does the phytoplankton–light feedback affect the marine N2O inventory? Earth System Dynamics Vol.14(No.2), 399-412. https://doi.org/10.5194/esd-14-399-2023
+Chawla, I., Karthikeyan, L., Mishra, A. K., 2020. A review of remote sensing applications for water security: Quantity, quality, and extremes(Article). Journal of Hydrology Vol.585(No.0), 124826. https://doi.org/10.1016/j.jhydrol.2020.124826
+Copernicus Marine Service, 2024a. Global Ocean Biogeochemistry Hindcast. https://doi.org/10.48670/moi-00019
+Copernicus Marine Service, 2024b. Global Ocean Ensemble Physics Reanalysis. https://doi.org/10.48670/moi-00024
+European Centre for Medium-Range Weather Forecasts, 2018. ERA5 hourly data on single levels from 1940 to present. https://doi.org/10.24381/cds.adbb2d47
+Friedland, K., Stock, C., Drinkwater, K., Link, J. S., Leaf, R. T., Shank, B. V., Rose, J. M., Pilskaln, C. H., Fogarty, M. J., 2012. Pathways between Primary Production and Fisheries Yields of Large Marine Ecosystems. PLOS ONE Vol.7(No.1), e28945. https://doi.org/10.1371/journal.pone.0028945
+Gan, J., Cheung, A., Guo, X., Li, L., 2009. Intensified upwelling over a widened shelf in the northeastern South China Sea. Journal of Geophysical Research-Oceans Vol.114(C9), 0. https://doi.org/10.1029/2007jc004660
+Hampton, S. E., Sharma, S., Brousil, M. R., Filazzola, A., 2022. Winter and summer storms modify chlorophyll relationships with nutrients in seasonally ice‐covered lakes. Ecosphere Vol.13(No.11), n/a. https://doi.org/10.1002/ecs2.4272
+Hong, Z., Long, D., Shan, K., Zhang, J.-M., Woolway, R. I., Liu, M., Mann, M. E., Fang, H., 2025. Declining ocean greenness and phytoplankton blooms in low to mid-latitudes under a warming climate. Science Advances Vol.11(No.42), eadx4857. https://doi.org/10.1126/sciadv.adx4857
+Ismail, K. A., Al-Shehhi, M. R., 2023. Applications of biogeochemical models in different marine environments: a review. Frontiers in Environmental Science Vol.11, 1198856. https://doi.org/10.3389/fenvs.2023.1198856
+Jiang, Z., Du, P., Liao, Y., Liu, Q., Chen, Q., Shou, L., Zeng, J., Chen, J., 2019. Oyster farming control on phytoplankton bloom promoted by thermal discharge from a power plant in a eutrophic, semi-enclosed bay. Water Research Vol.159(No.0), 1-9. https://doi.org/10.1016/j.watres.2019.04.023
+Kyung-Min Kim, J.-H. A., 2022. Machine learning predictions of chlorophyll-a in the Han river basin, Korea. Journal of environmental management Vol.318(Suppl C), 115636. https://doi.org/10.1016/j.jenvman.2022.115636
+Li, J., Li, Y., Li, J., Wang, G., Lyu, H., Zhu, Y., Dong, X., 2026. Coupling satellite imagery and numerical models to advance understanding and modelling of diel cyanobacterial blooms in shallow eutrophic lakes. Water Research Vol.288, 124744. https://doi.org/10.1016/j.watres.2025.124744
+Li, Z., Sun, D., Wang, S., Huan, Y., Zhang, H., He, Y., 2025. Satellites reveal hot spots of ocean changes in the early 21st century. Science Advances Vol.11(No.23), eads0307. https://doi.org/10.1126/sciadv.ads0307
+Liang, X. S., Kleeman, R., 2005. Information transfer between dynamical system components. Physical review letters Vol.95(No.24), 244101. https://doi.org/10.1103/PhysRevLett.95.244101
+Liang, X. S., Kleeman, R., 2007. A rigorous formalism of information transfer between dynamical system components. I. Discrete mapping. PHYSICA D-NONLINEAR PHENOMENA Vol.231(No.1), 1-9. https://doi.org/10.1016/j.physd.2007.04.002
+Liang, X. S., Xu, F., Rong, Y. N., Zhang, R. H., Tang, X., Zhang, F., 2021. El Niño Modoki can be mostly predicted more than 10 years ahead of time. Scientific reports Vol.11(No.1), 17860. https://doi.org/10.1038/s41598-021-97111-y
+Liu, S., Qi, X., Li, X., Ye, H., Wu, Y., Ren, J., Zhang, J., Xu, W., 2016. Nutrient dynamics from the Changjiang (Yangtze River) estuary to the East China Sea. Journal of Marine Systems Vol.154(Part A), 15-27. https://doi.org/10.1016/j.jmarsys.2015.05.010
+Naderian, D., Noori, R., Kim, D., Jun, C., Bateni, S. M., Woolway, R. I., Sharma, S., Shi, K., Qin, B., Zhang, Y., Jeppesen, E., Maberly, S. C., 2025. Environmental Controls on the Conversion of Nutrients to Chlorophyll in Lakes. Water Research Vol.274, 123094. https://doi.org/10.1016/j.watres.2025.123094
+Nishino, S., Shimada, K., Itoh, M., Yamamoto‐Kawai, M., Chiba, S., 2008. East–west differences in water mass, nutrient, and chlorophylladistributions in the sea ice reduction region of the western Arctic Ocean. Journal of Geophysical Research: JGR Vol.113(C1), C00A01. https://doi.org/10.1029/2007jc004666
+Rui, C., Sun, Z., Sun, Z., Zhang, W., Liu, A.-A., Wei, Z., 2024. Enhancing ENSO predictions with self-attention ConvLSTM and temporal embeddings. Frontiers in Marine Science Vol.11(No.2), 1-16. https://doi.org/10.3389/fmars.2024.1334210
+Saravani, M. J., Noori, R., Jun, C., Kim, D., Bateni, S. M., Kianmehr, P., Woolway, R. I., 2025. Predicting Chlorophyll- a Concentrations in the World's Largest Lakes Using Kolmogorov-Arnold Networks. Environmental Science and Technology Vol.59(No.3), 1801-1810. https://doi.org/10.1021/acs.est.4c11113
+Schuwirth, N., Borgwardt, F., Domisch, S., Friedrichs, M., Kattwinkel, M., Kneis, D., Kuemmerlen, M., Langhans, S. D., Martínez-López, J., Vermeiren, P., 2019. How to make ecological models useful for environmental management. Ecological Modelling Vol.411(No.0), 108784. https://doi.org/10.1016/j.ecolmodel.2019.108784
+Shahabi, A., Tahvildari, N., 2024. A deep-learning model for rapid spatiotemporal prediction of coastal water levels. Coastal Engineering Vol.190(No.000), 104504. https://doi.org/10.1016/j.coastaleng.2024.104504
+Shu, Y., Wang, D., Feng, M., Geng, B., Chen, J., Yao, J., Xie, Q., Liu, Q. Y., 2018. The Contribution of Local Wind and Ocean Circulation to the Interannual Variability in Coastal Upwelling Intensity in the Northern South China Sea. Journal of Geophysical Research-Oceans Vol.123(No.9), 6766-6778. https://doi.org/10.1029/2018jc014223
+Song, X., Huang, L., Zhang, J., Huang, H., Li, T., Su, Q., 2011. Harmful algal blooms (HABs) in Daya Bay, China: An in situ study of primary production and environmental impacts. Marine Pollution Bulletin Vol.58(No.9), 1310-1318. https://doi.org/10.1016/j.marpolbul.2009.04.030
+Sun, D., Huan, Y., Wang, S., Qiu, Z., Ling, Z., Mao, Z., He, Y., 2019. Remote sensing of spatial and temporal patterns of phytoplankton assemblages in the Bohai Sea, Yellow Sea, and east China sea. Water Research Vol.157(No.0), 119-133. https://doi.org/10.1016/j.watres.2019.03.081
+Thompson, P. A., O'Brien, T. D., Paerl, H. W., Peierls, B. L., Harrison, P. J., Robb, M., 2015. Precipitation as a driver of phytoplankton ecology in coastal waters: A climatic perspective. ESTUARINE COASTAL AND SHELF SCIENCE Vol.162(No.0), 119-129. https://doi.org/10.1016/j.ecss.2015.04.004
+Wang, J., Chen, X., 2024. A new approach to quantify chlorophyll-a over inland water targets based on multi-source remote sensing data. Science of the Total Environment Vol.906(Suppl C), 167631. https://doi.org/10.1016/j.scitotenv.2023.167631
+Wells, M. L., Trainer, V. L., Smayda, T. J., Karlson, B. S. O., Trick, C. G., Kudela, R. M., Ishikawa, A., Bernard, S., Wulff, A., Anderson, D. M., Cochlan, W. P., 2015. Harmful algal blooms and climate change: Learning from the past and present to forecast the future. Harmful algae Vol.49, 68-93. https://doi.org/10.1016/j.hal.2015.07.009
+Wool, T., Ambrose, R. B., Martin, J. L., Comer, A., 2020. WASP 8: The Next Generation in the 50-year Evolution of USEPA's Water Quality Model. Water Vol.12(No.5), 1398. https://doi.org/10.3390/w12051398
+Wu, S. S., H. Du, Z., Zhang, F., Zhou, Y., Y. Lu, R., 2023. Time-Series Forecasting of Chlorophyll-a in Coastal Areas Using LSTM, GRU and Attention-Based RNN Models. JOURNAL OF ENVIRONMENTAL INFORMATICS Vol.41(No.2), 104-117. https://doi.org/10.3808/jei.202300494
+Wu, T., Wu, H., 2018. Tidal Mixing Sustains a Bottom‐Trapped River Plume and Buoyant Coastal Current on an Energetic Continental Shelf. Journal of Geophysical Research. Oceans Vol.123(No.11), 8026-8051. https://doi.org/10.1029/2018jc014105
+Xu, Y., Chen, J., Yang, Q., Jiang, X., Fu, Y., Pan, D., 2024. Trend of harmful algal bloom dynamics from GOCI observed diurnal variation of chlorophyll a off Southeast coast of China. Frontiers in Marine Science Vol.11, 1-17. https://doi.org/10.3389/fmars.2024.1357669
+Yajima, H., Derot, J., 2018. Application of the Random Forest model for chlorophyll-a forecasts in fresh and brackish water bodies in Japan, using multivariate long-term databases. Journal of Hydroinformatics Vol.20(No.1), 191-205. https://doi.org/10.2166/hydro.2017.010
+Yao, L., Wang, X., Zhang, J., Yu, X., Zhang, S., Li, Q., 2023. Prediction of Sea Surface Chlorophyll-a Concentrations Based on Deep Learning and Time-Series Remote Sensing Data. Remote Sensing Vol.15(No.4486), 4486. https://doi.org/10.3390/rs15184486
+Zhao, H., Zhao, H., Cao, W., Deng, L., Liao, J., Zeng, K., Zheng, W., Zhang, Y., Zhang, Y., Xu, J., Zhou, W., 2023. Estimation of primary production from the light absorption of phytoplankton and photosynthetically active radiation in the South China Sea. Frontiers in Marine Science Vol.10, 1249802. https://doi.org/10.3389/fmars.2023.1249802
+Zhao, L., Zhu, R., Zhou, Q., Jeppesen, E., Yang, K., 2023. Trophic status and lake depth play important roles in determining the nutrient-chlorophyll a relationship: Evidence from thousands of lakes globally. Water Research Vol.242(suppl-C), 120182. https://doi.org/10.1016/j.watres.2023.120182
+Zheng, Q., Wang, R., Han, G., Li, W., Wang, X., Shao, Q., Wu, X., Cao, L., Zhou, G., Hu, S., 2024. A Spatiotemporal Multiscale Deep Learning Model for Subseasonal Prediction of Arctic Sea Ice. IEEE Transactions on Geoscience and Remote Sensing Vol.62, 1-22. https://doi.org/10.1109/tgrs.2024.3355238
