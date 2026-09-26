@@ -13,19 +13,8 @@ def twoSum(nums, target):
 
 
 def main():
-    # ACM 模式：一次性读入全部数据，避免 input() 在大数据下超时
-    data = sys.stdin.read().split()
-    if not data:
-        return
 
-    it = iter(data)
-    n = int(next(it))
-    target = int(next(it))
-    nums = [int(next(it)) for _ in range(n)]
-
-    res = twoSum(nums, target)
-    # 若题目要求下标从 1 开始，改为 str(x + 1)
-    sys.stdout.write(' '.join(map(str, res)))
+    print("qhy")
 
 if __name__ == '__main__':
     main()
