@@ -14,7 +14,7 @@ def twoSum(nums, target):
 
 def main():
 
-    print("qhy")
+    print("zcc")
 
 if __name__ == '__main__':
     main()
