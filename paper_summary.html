@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>因果引导的区域化深度学习 Chl-a 预测 · 论文总结</title>
+</head>
+<body>
+<style>
+:root{--bg:#fff;--soft:#f5f8fc;--line:#e3e9f2;--txt:#1b2436;--txt2:#4c5872;--txt3:#7b8699;--blue:#1f6fd0;--teal:#0f9b8e;--amber:#c8811a;--red:#d1495b;}
+</style>
+<style>
+*{box-sizing:border-box}
+.wrap{max-width:1060px;margin:0 auto;padding:0 26px}
+h1{font-size:clamp(23px,3.2vw,33px);line-height:1.32;margin:0 0 14px;font-weight:800}
+h2{font-size:21px;margin:0 0 6px}
+h3{font-size:16px;margin:22px 0 8px}
+p{margin:0 0 10px}
+.lead{color:var(--txt2);font-size:15px}
+.mono{font-family:ui-monospace,Consolas,monospace;font-size:13px}
+code{background:var(--soft2);padding:1px 5px;border-radius:4px;font-size:13px}
+header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#f8fbff,#fff)}
+.tag{display:inline-block;font-size:12px;letter-spacing:.08em;color:var(--blue);
+ background:var(--blue-l);border:1px solid #cfe2f8;padding:4px 12px;border-radius:999px;margin-bottom:16px}
+section{padding:36px 0;border-bottom:1px solid var(--line)}
+.card{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:18px}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.kpi{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:14px}
+.kpi b{display:block;font-size:20px;color:var(--blue);font-weight:800;line-height:1.3}
+.kpi span{font-size:12.5px;color:var(--txt3)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px;margin:14px 0}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:520px;background:#fff}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line)}
+th{background:var(--soft2);font-weight:650;color:var(--txt2);font-size:12.5px;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+figure{margin:16px 0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+figure img{display:block;width:100%;height:auto;cursor:zoom-in}
+figcaption{font-size:12.5px;color:var(--txt3);padding:8px 13px;border-top:1px solid var(--line);background:var(--soft)}
+.note{border-left:3px solid var(--blue);background:var(--blue-l);padding:12px 16px;border-radius:0 10px 10px 0;font-size:14px;color:#22406b;margin:14px 0}
+.note.warn{border-color:var(--amber);background:#fdf6e9;color:#6b4d12}
+.note.ok{border-color:var(--teal);background:#eafaf7;color:#12564f}
+.chip{display:inline-block;font-size:12px;padding:2px 9px;border-radius:999px;margin:0 4px 4px 0;background:var(--soft2);color:var(--txt2);border:1px solid var(--line)}
+.chip.b{background:var(--blue-l);color:var(--blue);border-color:#cfe2f8}
+.eq{font-family:ui-monospace,Consolas,monospace;font-size:13px;background:#f7fafd;border:1px solid var(--line);border-left:3px solid var(--blue);border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0;color:#22406b;overflow-x:auto}
+body{margin:0;background:#fff;color:var(--txt);line-height:1.8;
+ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+</style>
+<header><div class="wrap" style="padding:52px 26px 40px">
+<div class="tag">PAPER SUMMARY · CHLOROPHYLL-A PREDICTION</div>
+<h1>Causal-guided regional deep learning for chlorophyll-a dynamics prediction in heterogeneous marine systems</h1>
+<p class="lead">因果引导的区域化深度学习：面向异质海洋系统的叶绿素 a 动态预测</p>
+</div></header>
+<section><div class="wrap" style="padding-top:0;padding-bottom:0">
+<div class="card" style="margin-top:-6px">
+<p style="margin:0"><b>作者</b>：Xuan Wang（通讯）, Huanyu Qi, Wei Li, Guijun Han</p>
+<p style="margin:4px 0 0" class="lead">天津大学海洋科学与技术学院 · 天津市海洋环境研究与服务重点实验室</p>
+<p style="margin:4px 0 0" class="lead">资助：国家自然科学基金（42576199）</p>
+</div>
+</div></section>
+<section><div class="wrap">
+<h2>摘要要点</h2>
+<p class="lead">有害藻华（HABs）对海洋生态系统与人类健康威胁加剧，而叶绿素 a（Chl-a）是藻类生物量的关键指标。现有深度学习模型常被批评为「黑箱」，生态可解释性不足、在环境机制转换下鲁棒性差。本研究提出 <b>因果引导的深度学习框架</b>，将 Liang–Kleeman 信息流理论与 ConvLSTM 结合，预测中国近海及陆架海这一高度异质区域的 Chl-a 动态。</p>
+<div class="grid g4" style="margin-top:16px">
+<div class="kpi"><b>10</b><span>环境因子因果分析</span></div>
+<div class="kpi"><b>3</b><span>生态分区（K-Means）</span></div>
+<div class="kpi"><b>&gt;0.90</b><span>1 天预报 R²（全区）</span></div>
+<div class="kpi"><b>3–4</b><span>核心因子（原 10 个）</span></div>
+</div>
+</div></section>
+<section><div class="wrap">
+<h2>1 · 研究背景与动机</h2>
+<p class="lead">有害藻华（HABs）作为全球性海洋生态灾害，严重破坏海洋生态系统结构，威胁渔业生产、海产品安全与人体健康。Chl-a 作为藻类生物量的关键指标，反映富营养化风险，与 HABs 的发生发展密切相关。</p>
+<h3>两类建模路线的取舍</h3>
+<div class="grid g2">
+<div class="card"><b>数值 / 生物地球化学模型</b>
+<p class="lead">可解释性强，能阐明生态机制并外推至历史条件之外；但依赖复杂过程简化与细致参数化，高度动态环境下易失效。</p></div>
+<div class="card"><b>数据驱动 / 深度学习模型</b>
+<p class="lead">无需显式物理先验即可提取复杂模式，但捕捉的是统计关系而非因果机制，生态可解释性受限、机制转换下鲁棒性差。</p></div>
+</div>
+<h3>技术演进与遗留问题</h3>
+<p class="lead">ANN / 随机森林 → LSTM / GRU（时序依赖）→ CNN-LSTM（时空耦合，空间信息提取不足）→ <b>ConvLSTM</b>（卷积门控，时空联合建模，Chl-a 预测表现优异）。</p>
+<p class="lead">遗留问题：① 预测因子多为经验选取——过多则受数据可得性制约，过少则遗漏关键信息；② 模型多针对特定水体定制，区域差异的成因关注不足，跨区域迁移的可靠性不明。</p>
+<h3>本研究的切入点</h3>
+<p class="lead">Liang–Kleeman（LK）信息流理论可区分变量间的因果关系而非统计相关，已在地球系统科学（如 El Niño Modoki 预测）与全球海洋水色动态分析中应用。本研究将其适配为「真实因果」分析工具，用于环境因子与藻类发生的驱动关系识别，并进一步作为预测建模的先验约束。</p>
+<div class="note"><b>研究思路（三步走）：</b>① 用 LK 信息流量化 10 个环境因子的因果驱动强度并按网格统计分析；② 以信息流特征向量做 K-Means 聚类，划分因果结构相似的生态子区；③ 为每个子区建立区域化 ConvLSTM 模型，预测 Chl-a 变化，为水环境管理提供技术支撑。</div>
+
+
+
+
+</div></section>
+<section><div class="wrap">
+<h2>2 · 研究区域与数据</h2>
+<p class="lead">研究区覆盖中国近海及邻近边缘海（107.25°E–126.00°E，16.00°N–41.00°N），水深从浅水陆架延伸至超过 5000 m 的深水区，受东亚季风、潮汐强迫与洋流共同影响，并叠加河流径流与人类活动排放，生态空间异质性显著。</p>
+<figure><img src="paper_assets/image1.png" alt="研究区水深">
+<figcaption>图 1　研究区水深分布与关键地理单元（渤海、黄海、东海、南海北部 NSCS、台湾岛、吕宋海峡、长江口、珠江口 PRE）</figcaption></figure>
+<h3>数据来源</h3>
+<p class="lead"><b>海洋生物地球化学与物理数据</b>来自哥白尼海洋环境监测服务（CMEMS）：① 全球海洋生物地球化学再分析（NO₃、PO₄、SiO₄、DO、Chl-a）；② 全球海洋集合物理再分析（U、V 流速、SSS、SST）。时间范围 2000-01-01 至 2020-12-31，统一重采样至 0.25°×0.25°、日尺度。</p>
+<p class="lead"><b>气象强迫数据</b>来自 ECMWF 第五代全球气候再分析 ERA5：地表太阳辐射（SSR，日平均）与总降水（日累计），同期 2000—2020 年、0.25°×0.25°、原始小时尺度。</p>
+<h3>表 1　环境变量汇总与统计特征</h3>
+<div class="tw"><table>
+<thead><tr><th>No.</th><th>变量</th><th>缩写</th><th>单位</th><th>Min</th><th>Mean</th><th>Max</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>叶绿素 a</td><td class="mono">Chl-a</td><td>mg/m³</td><td class="mono">0.0613</td><td class="mono">0.4003</td><td class="mono">21.9510</td></tr>
+<tr><td>2</td><td>硝酸盐</td><td class="mono">NO₃</td><td>mmol/m³</td><td class="mono">0.0008</td><td class="mono">1.9533</td><td class="mono">108.9583</td></tr>
+<tr><td>3</td><td>磷酸盐</td><td class="mono">PO₄</td><td>mmol/m³</td><td class="mono">0.00002</td><td class="mono">0.0189</td><td class="mono">2.1309</td></tr>
+<tr><td>4</td><td>硅酸盐</td><td class="mono">SiO₄</td><td>mmol/m³</td><td class="mono">1.0523</td><td class="mono">6.8240</td><td class="mono">245.6781</td></tr>
+<tr><td>5</td><td>溶解氧</td><td class="mono">DO</td><td>mmol/m³</td><td class="mono">176.2436</td><td class="mono">222.5076</td><td class="mono">433.6261</td></tr>
+<tr><td>6</td><td>纬向流速</td><td class="mono">U</td><td>m/s</td><td class="mono">-1.9317</td><td class="mono">0.0224</td><td class="mono">2.7112</td></tr>
+<tr><td>7</td><td>经向流速</td><td class="mono">V</td><td>m/s</td><td class="mono">-2.0312</td><td class="mono">0.0701</td><td class="mono">2.3659</td></tr>
+<tr><td>8</td><td>海表盐度</td><td class="mono">SSS</td><td>PSU</td><td class="mono">0.6325</td><td class="mono">32.7803</td><td class="mono">35.4763</td></tr>
+<tr><td>9</td><td>海表温度</td><td class="mono">SST</td><td>°C</td><td class="mono">-1.7800</td><td class="mono">23.5772</td><td class="mono">32.4777</td></tr>
+<tr><td>10</td><td>地表太阳辐射</td><td class="mono">SSR</td><td>J/m²</td><td class="mono">19410.67</td><td class="mono">569191.81</td><td class="mono">1185101.38</td></tr>
+<tr><td>11</td><td>总降水</td><td class="mono">Precipitation</td><td>m</td><td class="mono">0.0000</td><td class="mono">0.0043</td><td class="mono">0.3922</td></tr>
+</tbody></table></div>
+</div></section>
+<section><div class="wrap">
+<h2>3 · 方法</h2>
+<h3>3.1　Liang–Kleeman 信息流（LKIF）</h3>
+<p class="lead">LKIF 通过计算信息流值来量化变量间的因果关系强度，与传统相关分析不同，它能揭示因果<b>方向</b>并定量描述影响程度。</p>
+<div class="eq mono">T<sub>2→1</sub> = (C₁₁C₁₂C<sub>2,d1</sub> − C₁₂²C<sub>1,d1</sub>) / (C₁₁²C₂₂ − C₁₁C₁₂²)　（式 1）</div>
+<p class="lead">其中 C<sub>ij</sub> 为 X<sub>i</sub> 与 X<sub>j</sub> 的样本协方差，C<sub>i,dj</sub> 为 X<sub>i</sub> 与 dX<sub>j</sub>/dt 前向差分近似的协方差。T<sub>2→1</sub> 非零表示存在因果驱动，为零表示无因果影响。</p>
+
+
+
+
+<!--NEXT-->
+</body>
+</html>
